@@ -32,35 +32,54 @@ std::string replace_all(std::string str, const std::string& from, const std::str
 }
 
 // Launches an application by forking the current process and changing the command.
-void launch(char** args) {
+void launch(char** args, std::string input, std::string output) {
     pid_t pid, wpid;
     int status;
     pid = fork();
+
+    // The forked process ends up here.
     if (pid == 0) {
+        if (input != "") {
+            freopen(input.c_str(), "r", stdin);
+        }
+
+        if (output != "") {
+            freopen(output.c_str(), "w", stdout);
+        }
+
         if (execvp(args[0], args) == -1) {
             perror("mussels");
             _exit(EXIT_FAILURE);
         }
+    // An error occured with the fork.
     } else if (pid < 0) {
         perror("mussels");
+    // The parent process ends up here.
     } else {
-        do {
-            wpid = waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        // Waits for the forked process to finish, if not in background.
+        if (output != "/dev/null") {
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
     }
 }
 
 // Main loop of the shell. Handles commands.
 void loop() {
     while (true) {
+        // Print the input prompt.
         std::cout << "(" << KCYN << getenv("PWD") << KNRM << ")" << std::endl;
         std::cout << "> " << KNRM;
-        std::string input;
 
+        // Get the input.
+        std::string input;
         std::getline(std::cin, input);
 
+        // Do input replacements.
         input = replace_all(input, std::string("~"), getenv("HOME"));
 
+        // Parse the input into args.
         std::istringstream iss(input);
         std::vector<std::string> tokens;
         std::copy(std::istream_iterator<std::string>(iss),
@@ -81,14 +100,30 @@ void loop() {
             std::cout << "Mussels is an Unbelievingly Slim and Simple - Even Limiting - Shell" << std::endl;
             std::cout << "For help on a specific command, use the 'man' command." << std::endl;
         } else {
+            std::string input;
+            std::string output;
+
+            // Convert the C++ strings into C *char.
             char* argv[tokens.size()];
             int argc = 0;
             for (int x = 0; x < tokens.size(); x++) {
-                argv[argc++] = strdup(tokens[x].c_str());
+                if (tokens[x] == "&") {
+                    output = "/dev/null";
+                    break;
+                } else if (tokens[x] == ">") {
+                    output = tokens[x+1];
+                    x++;
+                } else if (tokens[x] == "<") {
+                    input = tokens[x+1];
+                    x++;
+                } else {
+                    argv[argc++] = strdup(tokens[x].c_str());
+                }
             }
             argv[argc++] = 0;
 
-            launch(argv);
+            // Launch the command.
+            launch(argv, input, output);
         }
     }
 }
