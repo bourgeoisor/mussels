@@ -67,6 +67,8 @@ void launch(char** args, std::string input, std::string output) {
 
 // Main loop of the shell. Handles commands.
 void loop() {
+    std::vector<std::string> history;
+
     while (true) {
         // Print the input prompt.
         std::cout << "(" << KCYN << getenv("PWD") << KNRM << ")" << std::endl;
@@ -78,6 +80,10 @@ void loop() {
 
         // Do input replacements.
         input = replace_all(input, std::string("~"), getenv("HOME"));
+        input = replace_all(input, std::string("!!"), history.back());
+
+        // Add to global history.
+        history.push_back(input);
 
         // Parse the input into args.
         std::istringstream iss(input);
@@ -92,6 +98,10 @@ void loop() {
                 perror("mussels");
             } else {
                 setenv("PWD", get_current_dir_name(), 1);
+            }
+        } else if (command == "history") {
+            for (auto previous : history) {
+                std::cout << previous << std::endl;
             }
         } else if (command == "exit") {
             std::cout << "Bye!" << std::endl;
