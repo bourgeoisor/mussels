@@ -72,7 +72,7 @@ void loop() {
     while (true) {
         // Print the input prompt.
         std::cout << "(" << KCYN << getenv("PWD") << KNRM << ")" << std::endl;
-        std::cout << "> " << KNRM;
+        std::cout << KMAG << "> " << KNRM;
 
         // Get the input.
         std::string input;
@@ -138,6 +138,8 @@ void loop() {
             // Launch the command.
             launch(argv, input, output);
         }
+
+        std::cout << std::endl;
     }
 }
 
