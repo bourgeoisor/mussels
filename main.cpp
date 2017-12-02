@@ -81,6 +81,9 @@ void loop() {
         // Do input replacements.
         input = replace_all(input, std::string("~"), getenv("HOME"));
         input = replace_all(input, std::string("!!"), history.back());
+        input = replace_all(input, std::string("$PWD"), getenv("PWD"));
+        input = replace_all(input, std::string("$HOME"), getenv("HOME"));
+        input = replace_all(input, std::string("$PATH"), getenv("PATH"));
 
         // Add to global history.
         history.push_back(input);
